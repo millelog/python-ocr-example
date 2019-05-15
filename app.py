@@ -1,7 +1,7 @@
 import os
-
+import boyermoore
 from flask import Flask, render_template, request
-
+from werkzeug.utils import secure_filename
 from ocr_core import ocr_core
 
 
@@ -20,6 +20,20 @@ def allowed_file(filename):
 def home_page():
     return render_template('index.html')
 
+@app.route('/api/upload', methods=['POST'])
+def api_upload_image():
+    if 'file' not in request.files:
+        return 'No file selected'
+    file = request.files['file']
+    if file.filename == '':
+        return 'No file selected'
+    if file and allowed_file(file.filename):
+        filename = secure_filename(file.filename);
+        file.save(os.path.join(os.getcwd()+UPLOAD_FOLDER, filename))
+        extracted_text = ocr_core(file)
+        print(extracted_text);
+        return extracted_text
+        
 
 @app.route('/upload', methods=['GET', 'POST'])
 def upload_page():
@@ -38,6 +52,7 @@ def upload_page():
 
             # call the OCR function on it
             extracted_text = ocr_core(file)
+            print(extracted_text);
 
             # extract the text and display it
             return render_template('upload.html',
@@ -48,4 +63,4 @@ def upload_page():
         return render_template('upload.html')
 
 if __name__ == '__main__':
-    app.run()
+    app.run(host='0.0.0.0', port=80)
